@@ -1,6 +1,6 @@
 # Grapie 
 
-<img align="right" src=".github/grapie.png" width="200" height="200" alt="Grapie logo">
+<img align="right" src=".github/logo.png" width="200" height="200" alt="Grapie logo">
 
 Grapie is an open source, SSR (Server Side Rendering) framework for building web applications. 
 It is built for [Bun](https://bun.sh) using [TypeScript](https://www.typescriptlang.org)
