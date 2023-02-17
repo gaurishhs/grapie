@@ -7,6 +7,10 @@ It is built for [Bun](https://bun.sh) using [TypeScript](https://www.typescriptl
 
 This is a work in progress.
 
+## Why Another Framework?
+
+There are many frameworks out there, like Next.js 
+
 ## Features
 
 - Fast and easy to use

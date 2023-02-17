@@ -1,3 +1,4 @@
+import { Plugin } from "@/../plugin";
 import { Serve } from "bun";
 
 export interface RouterOptions {
@@ -27,7 +28,7 @@ export type Params = Record<string, any>
 export type RouteCallback = (req: Request, params: Params) => Response | Promise<Response>
 export type APIRoute = (req: Request, params: Params) => Response | Promise<Response>
 
-export type Config = {
+export interface Config {
 	/* Configure Bun Server */
     serverConfig?: Partial<Serve>;
 	/* Use a custom host for the server */
@@ -37,13 +38,20 @@ export type Config = {
 	 * 
 	 * @default process.cwd()
 	 */
-	rootDir?: string;
+	rootDir: string;
 	/* Use a custom port for the server */
     port?: number;
 	/* Environment to run the server in */
 	development?: boolean
+	/* Plugins to use */
+	plugins?: Plugin[]
 }
 
 export type GrapieCache = {
 	api: Record<string, any>
+}
+
+export interface TemplateOptions {
+	lang?: string;
+	body?: string;
 }

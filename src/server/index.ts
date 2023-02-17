@@ -1,16 +1,38 @@
 import type { Config, RouteCallback } from "@/types";
 import type { Server } from "bun";
-import { Router } from "./router";
-import { getPath } from "./utils";
+import { FileSystemRouter } from "bun";
 import type { Plugin } from "@/../plugin";
 
 export class GrapieServer {
-    private router = new Router();
-    server: Server | null = null;
-    constructor (private config: Config, private plugins?: Plugin[]) {
+    /* The router */
+    private router: FileSystemRouter
+    /* A not found handler, Which can be customized as well. */
+    public notFoundHandler: RouteCallback = () => {
+        return new Response("Not Found", {
+            status: 404
+        })
+    };
+    /* The Bun server */
+    protected server: Server | null = null;
+    /**
+     * Create a new Grapie server
+     * @param {Config} config - The configuration for the server
+     * @param {Plugin[]} plugins - The plugins to use
+     */
+    constructor (
+        /* The configuration for the server */
+        private config: Config, 
+        /* The plugins to use */
+        private plugins?: Plugin[]
+    ) {
+        this.router = new FileSystemRouter({
+            dir: config.rootDir,
+            style: 'nextjs'
+        })
+        // Initialize the plugins
         if (this.plugins) {
             for (const plugin of this.plugins) {
-                const onInit = plugin(this.config).server?.onInit;
+                var onInit = plugin(this.config).server?.onInit;
                 if (onInit) {
                     onInit(this)
                 }
@@ -18,73 +40,36 @@ export class GrapieServer {
         }
     }
 
-    public addHandler(method: string, path: string, handler: RouteCallback) {
-        path = path.startsWith('/') ? path : (`/${path}`)
-        this.router.register(path)[method] = {
-            handler,
-        }
-    }
-
-    public addNotFoundHandler(handler: RouteCallback) {
-        this.router.register('/*').get = {
-            handler,
-        }
-    }
-
-    get(path: string, handler: RouteCallback) {
-        this.addHandler('get', path, handler)
-    }
-
-    post(path: string, handler: RouteCallback) {
-        this.addHandler('post', path, handler)
-    }
-
-    put(path: string, handler: RouteCallback) {
-        this.addHandler('put', path, handler)
-    }
-
-    delete(path: string, handler: RouteCallback) {
-        this.addHandler('delete', path, handler)
-    }
-
-    patch(path: string, handler: RouteCallback) {
-        this.addHandler('patch', path, handler)
-    }
-
-    custom(path: string, method: string, handler: RouteCallback) {
-        this.addHandler(method, path, handler)
-    }
-
+    /**
+     * Handle requests
+     * @param {Request} req - The request from the Bun server 
+     * @returns {Response | Promise<Response>} The response from the server
+     */
     handle(req: Request): Response | Promise<Response> {
         if (this.plugins) { 
             for (const plugin of this.plugins) {
-                const onRequest = plugin(this.config).server?.onRequest;
+                var onRequest = plugin(this.config).server?.onRequest;
                 if (onRequest) {
                     onRequest(req)
                 }
             }
         }
-        console.log(getPath(req.url))
-        const route = this.router.find(getPath(req.url))
+        const route = this.router.match(req.url)
 
-        if (!route) {
-            return new Response('Not Found', { status: 404 })
-        }
+        if (!route) return this.notFoundHandler(req, {})
 
-        const handler = route.store[req.method.toLowerCase()].handler
-
-        if (!handler) {
-            return new Response('Method Not Allowed', { status: 405 })
-        }
-
+        const { default: handler } = require(route.filePath);
         return handler(req, route.params)
     }
-
+    /**
+     * Start the server
+     * @param {number} port - The port to listen on 
+     */
     listen(port: number) {
         var configByPlugins = {};
         if (this.plugins) {
             for (const plugin of this.plugins) {
-                const config = plugin(this.config).server?.config;
+                var config = plugin(this.config).server?.config;
                 if (config) {
                     configByPlugins = { ...configByPlugins, ...config }
                 }

@@ -1,50 +1,27 @@
 import { GrapieServer } from "./server";
 import { loadConfiguration } from "./config";
-import type { Config, GrapieCache } from "@/types";
-import { fdir } from "fdir";
+import type { Config } from "@/types";
 
 export class Grapie {
+  /* The configuration for the server */
   config: Config;
+  /* The server */
   server: GrapieServer;
+  /**
+   * Create a new Grapie instance
+   */
   constructor() {
     this.config = loadConfiguration();
     this.server = new GrapieServer(this.config);
-    this.loadAPIRoutes = this.loadAPIRoutes.bind(this);
-    this.loadAPIRoutes();
     this.server.listen(this.config.port || 3000);
-  }
-
-  /**
-   * Read the API directory and load all routes
-   */
-  loadAPIRoutes() {
-    // Get the paths of all files in the API directory
-    const paths = new fdir()
-      .withFullPaths()
-      .withBasePath()
-      .filter((path) => {
-        return path.endsWith(".ts") || path.endsWith(".js");
-      })
-      .crawl(this.config.rootDir + "/api")
-      .sync() as string[];
-    // If there are no paths, return
-    if (!paths.length) return;
-    // Loop through the paths and add the handler
-    for (const path of paths) {
-      const handler = require(path).handler;
-      if (!handler) return;
-      // Remove the root directory and the file extension
-      const route = path
-        .replace(this.config.rootDir + "/api", "")
-        .replace(".ts", "")
-        .replace(".js", "");
-      const indexRegex = /\/index$/;
-      if (indexRegex.test(route)) {
-        const newRoute = route.replace(indexRegex, "");
-        this.server.addHandler("get", newRoute, handler);
-        continue;
+    // Call the onInit hook
+    if (this.config.plugins) {
+      for (const plugin of this.config.plugins) {
+        var onInit = plugin(this.config).onInit;
+        if (onInit) {
+          onInit(this)
+        }
       }
-      this.server.addHandler("get", route, handler);
     }
   }
 }
