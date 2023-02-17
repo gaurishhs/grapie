@@ -5,11 +5,7 @@
 Grapie is an open source, SSR (Server Side Rendering) framework for building web applications. 
 It is built for [Bun](https://bun.sh) using [TypeScript](https://www.typescriptlang.org)
 
-This is a work in progress.
-
-## Why Another Framework?
-
-There are many frameworks out there, like Next.js 
+This is a work in progress. Once Jarred releases the new bundler I shall make a release for Grapie.
 
 ## Features
 
